@@ -6,7 +6,7 @@ Docker image used: [dopos/dockerfile-powerdns-pg](https://github/com/dopos/docke
 
 * Fork this repo
 * Setup deploy hooks
-* Load config to scape
+* Save config to dcape
 * Run hook (powerdns will be installed and started on all hook hosts)
 * Fork [dopos/dcape-dns-config](https://github/com/dopos/dcape-dns-config) and cook your zones
 

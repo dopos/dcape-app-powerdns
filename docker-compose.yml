@@ -1,0 +1,30 @@
+version: '2.1'
+
+services:
+
+  pdns:
+    image: ${IMAGE}:${IMAGE_VER}
+    ports:
+      - "${SERVICE_PORT}:53"
+      - "${SERVICE_PORT}:53/udp"
+    restart: always
+    networks:
+      - lan
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=8081"
+      - "traefik.frontend.rule=Host:${APP_SITE}"
+      - "traefik.frontend.auth.basic=${AUTH}"
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    command:
+      /usr/sbin/pdns_server --master --daemon=no --chroot=/ --socket-dir=/var/run
+      --launch=bind --launch+=gpgsql --gpgsql-dbname=${DB_USER} --gpgsql-user=${DB_USER}
+      --gpgsql-host=db --gpgsql-password=${DB_PASS}
+      --webserver --webserver-address=0.0.0.0 --webserver-port=8081
+
+networks:
+  lan:
+    external:
+      name: ${DCAPE_NET}

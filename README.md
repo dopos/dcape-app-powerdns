@@ -1,6 +1,6 @@
 # dcape-app-powerdns - Run powerdns in dcape environment
 
-Docker image used: [dopos/dockerfile-powerdns-pg](https://github/com/dopos/dockerfile-powerdns-pg)
+Docker image used: [dopos/dockerfile-powerdns-pg](https://github.com/dopos/dockerfile-powerdns-pg)
 
 ## Usage
 

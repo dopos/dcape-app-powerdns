@@ -18,11 +18,12 @@ services:
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
+    entrypoint: /usr/sbin/pdns_server
     command:
-      /usr/sbin/pdns_server --master --daemon=no --chroot=/ --socket-dir=/var/run
+      --master --daemon=no --chroot=/ --socket-dir=/var/run
       --launch=bind --launch+=gpgsql --gpgsql-dbname=${DB_USER} --gpgsql-user=${DB_USER}
       --gpgsql-host=db --gpgsql-password=${DB_PASS}
-      --webserver --webserver-address=0.0.0.0 --webserver-port=8081
+      --webserver --webserver-address=0.0.0.0 --webserver-port=8081 --webserver-allow-from=0.0.0.0/0
 
 networks:
   lan:

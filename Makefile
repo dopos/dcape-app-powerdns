@@ -19,9 +19,9 @@ STATS_USER         ?= admin
 STATS_PASS         ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c8; echo)
 
 # Docker image name
-IMAGE              ?= dopos/powerdns
+IMAGE              ?= psitrax/powerdns
 # Docker image tag
-IMAGE_VER          ?= 0.1
+IMAGE_VER          ?= 4.1.5
 # Docker-compose project name (container name prefix)
 PROJECT_NAME       ?= pdns
 # dcape container name prefix
@@ -35,7 +35,7 @@ DCAPE_DB           ?= $(DCAPE_PROJECT_NAME)_db_1
 DC_VER             ?= 1.14.0
 
 # Path to schema.pgsql.sql in PowerDNS docker image
-PGSQL_PATH         ?= /usr/share/doc/pdns/schema.pgsql.sql
+PGSQL_PATH         ?= schema.pgsql.sql
 
 define CONFIG_DEF
 # ------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ db-create: docker-wait
 	docker exec -i $$DCAPE_DB psql -U postgres -c "CREATE USER \"$$DB_USER\" WITH PASSWORD '$$DB_PASS';" || true ; \
 	docker exec -i $$DCAPE_DB psql -U postgres -c "CREATE DATABASE \"$$DB_USER\" OWNER \"$$DB_USER\";" || db_exists=1 ; \
 	if [[ ! "$$db_exists" ]] ; then \
-	  docker run -t --rm $$IMAGE:$$IMAGE_VER cat $(PGSQL_PATH) | docker exec -i $$DCAPE_DB psql -U $$DB_USER -f - ; \
+	  cat $(PGSQL_PATH) | docker exec -i $$DCAPE_DB psql -U $$DB_USER -f - ; \
 	fi
 
 ## drop database and user

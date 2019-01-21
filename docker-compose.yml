@@ -2,7 +2,7 @@ version: '2.1'
 
 services:
 
-  pdns:
+  app:
     image: ${IMAGE}:${IMAGE_VER}
     ports:
       - "${SERVICE_PORT}:53"

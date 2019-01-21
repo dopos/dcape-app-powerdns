@@ -23,7 +23,7 @@ IMAGE              ?= psitrax/powerdns
 # Docker image tag
 IMAGE_VER          ?= 4.1.5
 # Docker-compose project name (container name prefix)
-PROJECT_NAME       ?= pdns
+PROJECT_NAME       ?= $(shell basename $$PWD)
 # dcape container name prefix
 DCAPE_PROJECT_NAME ?= dcape
 # dcape network attach to
@@ -32,7 +32,7 @@ DCAPE_NET          ?= $(DCAPE_PROJECT_NAME)_default
 DCAPE_DB           ?= $(DCAPE_PROJECT_NAME)_db_1
 
 # Docker-compose image tag
-DC_VER             ?= 1.14.0
+DC_VER             ?= 1.23.2
 
 # Path to schema.pgsql.sql in PowerDNS docker image
 PGSQL_PATH         ?= schema.pgsql.sql
@@ -65,12 +65,6 @@ STATS_PASS=$(STATS_PASS)
 IMAGE=$(IMAGE)
 # Docker image tag
 IMAGE_VER=$(IMAGE_VER)
-# Docker-compose project name (container name prefix)
-PROJECT_NAME=$(PROJECT_NAME)
-# dcape network attach to
-DCAPE_NET=$(DCAPE_NET)
-# dcape postgresql container name
-DCAPE_DB=$(DCAPE_DB)
 
 endef
 export CONFIG_DEF

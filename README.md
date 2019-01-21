@@ -12,7 +12,7 @@
 
 ## Docker image used
 
-* [dopos/dockerfile-powerdns-pg](https://github.com/dopos/dockerfile-powerdns-pg)
+* [psitrax/powerdns](https://github.com/psi-4ward/docker-powerdns)
 
 ## Requirements
 
@@ -36,4 +36,4 @@ See also: [Deploy setup](https://github.com/dopos/dcape/blob/master/DEPLOY.md) (
 
 The MIT License (MIT), see [LICENSE](LICENSE).
 
-Copyright (c) 2017 Alexey Kovrizhkin <lekovr+dopos@gmail.com>
+Copyright (c) 2017 Aleksei Kovrizhkin <lekovr+dopos@gmail.com>

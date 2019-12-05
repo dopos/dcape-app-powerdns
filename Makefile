@@ -21,7 +21,7 @@ STATS_PASS         ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c8; echo)
 # Docker image name
 IMAGE              ?= psitrax/powerdns
 # Docker image tag
-IMAGE_VER          ?= 4.2.0
+IMAGE_VER          ?= v4.2.0
 # Docker-compose project name (container name prefix)
 PROJECT_NAME       ?= $(shell basename $$PWD)
 # dcape container name prefix

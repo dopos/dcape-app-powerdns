@@ -14,7 +14,7 @@ services:
       - "traefik.enable=true"
       - "traefik.port=8081"
       - "traefik.frontend.rule=Host:${APP_SITE}"
-      - "traefik.frontend.auth.basic=${AUTH}"
+      - "traefik.frontend.auth.basic.users=${AUTH}"
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro

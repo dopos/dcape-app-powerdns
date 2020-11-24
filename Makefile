@@ -1,15 +1,17 @@
 # dcape-app-powerdns Makefile
 
-SHELL               = /bin/bash
+SHELL               = /bin/sh
 CFG                ?= .env
-
-# Database name and database user name
-DB_USER            ?= pdns
-# Database user password
-DB_PASS            ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c14; echo)
 
 # DNS tcp/udp port
 SERVICE_PORT       ?= 54
+
+# Database name
+PGDATABASE         ?= pdns
+# Database user name
+PGUSER             ?= pdns
+# Database user password
+PGPASSWORD         ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c14; echo)
 
 # Stats site host
 APP_SITE           ?= ns.dev.lan
@@ -19,9 +21,9 @@ STATS_USER         ?= admin
 STATS_PASS         ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c8; echo)
 
 # Docker image name
-IMAGE              ?= psitrax/powerdns
+IMAGE              ?= magnaz/powerdns
 # Docker image tag
-IMAGE_VER          ?= v4.2.0
+IMAGE_VER          ?= 4.3.1
 # Docker-compose project name (container name prefix)
 PROJECT_NAME       ?= $(shell basename $$PWD)
 # dcape container name prefix
@@ -29,13 +31,13 @@ DCAPE_PROJECT_NAME ?= dcape
 # dcape network attach to
 DCAPE_NET          ?= $(DCAPE_PROJECT_NAME)_default
 # dcape postgresql container name
-DCAPE_DB           ?= $(DCAPE_PROJECT_NAME)_db_1
+PG_CONTAINER       ?= $(DCAPE_PROJECT_NAME)_db_1
 
 # Docker-compose image tag
-DC_VER             ?= 1.23.2
+DC_VER             ?= 1.27.4
 
 # Path to schema.pgsql.sql in PowerDNS docker image
-PGSQL_PATH         ?= schema.pgsql.sql
+PGSQL_PATH         ?= /usr/local/share/doc/pdns/schema.pgsql.sql
 
 define CONFIG_DEF
 # ------------------------------------------------------------------------------
@@ -44,20 +46,15 @@ define CONFIG_DEF
 # DNS server port
 SERVICE_PORT=$(SERVICE_PORT)
 
-# Database name and database user name
-DB_USER=$(DB_USER)
+# Database name
+PGDATABASE=$(PGDATABASE)
+# Database user name
+PGUSER=$(PGUSER)
 # Database user password
-DB_PASS=$(DB_PASS)
-
-# PowerDNS statistics
+PGPASSWORD=$(PGPASSWORD)
 
 # Stats site host
 APP_SITE=$(APP_SITE)
-
-# Stats login
-STATS_USER=$(STATS_USER)
-# Stats password
-STATS_PASS=$(STATS_PASS)
 
 # Docker details
 
@@ -71,8 +68,9 @@ IMAGE_VER=$(IMAGE_VER)
 PROJECT_NAME=$(PROJECT_NAME)
 # dcape network attach to
 DCAPE_NET=$(DCAPE_NET)
+
 # dcape postgresql container name
-DCAPE_DB=$(DCAPE_DB)
+PG_CONTAINER=$(PG_CONTAINER)
 
 endef
 export CONFIG_DEF
@@ -116,7 +114,7 @@ down: dc
 # Wait for postgresql container start
 docker-wait:
 	@echo -n "Checking PG is ready..."
-	@until [[ `docker inspect -f "{{.State.Health.Status}}" $$DCAPE_DB` == healthy ]] ; do sleep 1 ; echo -n "." ; done
+	@until [ `docker inspect -f "{{.State.Health.Status}}" $$PG_CONTAINER` = "healthy" ] ; do sleep 1 ; echo -n "." ; done
 	@echo "Ok"
 
 # ------------------------------------------------------------------------------
@@ -125,20 +123,25 @@ docker-wait:
 # create user, db and load sql
 db-create: docker-wait
 	@echo "*** $@ ***" ; \
-	docker exec -i $$DCAPE_DB psql -U postgres -c "CREATE USER \"$$DB_USER\" WITH PASSWORD '$$DB_PASS';" || true ; \
-	docker exec -i $$DCAPE_DB psql -U postgres -c "CREATE DATABASE \"$$DB_USER\" OWNER \"$$DB_USER\";" || db_exists=1 ; \
-	if [[ ! "$$db_exists" ]] ; then \
-	  cat $(PGSQL_PATH) | docker exec -i $$DCAPE_DB psql -U $$DB_USER -f - ; \
+	sql="CREATE USER \"$$PGUSER\" WITH PASSWORD '$$PGPASSWORD'" ; \
+	docker exec -i $$PG_CONTAINER psql -U postgres -c "$$sql" 2>&1 > .psql.log | grep -v "already exists" > /dev/null || true ; \
+	cat .psql.log ; \
+	docker exec -i $$PG_CONTAINER psql -U postgres -c "CREATE DATABASE \"$$PGDATABASE\" OWNER \"$$PGUSER\";" 2>&1 > .psql.log | grep  "already exists" > /dev/null || db_exists=1 ; \
+	cat .psql.log ; \
+	if [ "$$db_exists" = "1" ] ; then \
+	  echo "*** db data load" ; \
+	  docker run --rm --entrypoint cat $$IMAGE:$$IMAGE_VER $(PGSQL_PATH) \
+	    | docker exec -i $$PG_CONTAINER psql -U $$PGUSER -d $$PGDATABASE -f - ; \
 	fi
 
 ## drop database and user
 db-drop: docker-wait
 	@echo "*** $@ ***"
-	@docker exec -it $$DCAPE_DB psql -U postgres -c "DROP DATABASE \"$$DB_USER\";" || true
-	@docker exec -it $$DCAPE_DB psql -U postgres -c "DROP USER \"$$DB_USER\";" || true
+	@docker exec -it $$PG_CONTAINER psql -U postgres -c "DROP DATABASE \"$$PGDATABASE\";" || true
+	@docker exec -it $$PG_CONTAINER psql -U postgres -c "DROP USER \"$$PGUSER\";" || true
 
 psql: docker-wait
-	@docker exec -it $$DCAPE_DB psql -U $$DB_USER
+	@docker exec -it $$PG_CONTAINER psql -U $$PGUSER $$PGDATABASE
 
 # ------------------------------------------------------------------------------
 
@@ -146,20 +149,22 @@ psql: docker-wait
 # и относительные тома новых контейнеров могли его использовать
 ## run docker-compose
 dc: docker-compose.yml
-	@AUTH=$$(htpasswd -nb $$STATS_USER $$STATS_PASS) ; \
-	docker run --rm  \
+	@docker run --rm  \
 	  -v /var/run/docker.sock:/var/run/docker.sock \
 	  -v $$PWD:$$PWD \
 	  -w $$PWD \
-	  --env=AUTH=$$AUTH \
 	  docker/compose:$(DC_VER) \
 	  -p $$PROJECT_NAME \
 	  $(CMD)
 
 # ------------------------------------------------------------------------------
 
-$(CFG):
+$(CFG).sample:
 	@[ -f $@ ] || echo "$$CONFIG_DEF" > $@
+
+
+## generate sample config
+config: $(CFG).sample
 
 # ------------------------------------------------------------------------------
 

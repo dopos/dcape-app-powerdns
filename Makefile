@@ -6,6 +6,12 @@ CFG                ?= .env
 # DNS tcp/udp port
 SERVICE_PORT       ?= 54
 
+# Stats site host
+APP_SITE           ?= ns.dev.lan
+
+# Join this dcape traefik environment
+DCAPE_TAG          ?= dcape
+
 # Database name
 PGDATABASE         ?= pdns
 # Database user name
@@ -13,25 +19,16 @@ PGUSER             ?= pdns
 # Database user password
 PGPASSWORD         ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c14; echo)
 
-# Stats site host
-APP_SITE           ?= ns.dev.lan
-# Stats login
-STATS_USER         ?= admin
-# Stats password
-STATS_PASS         ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c8; echo)
-
 # Docker image name
 IMAGE              ?= magnaz/powerdns
 # Docker image tag
 IMAGE_VER          ?= 4.3.1
 # Docker-compose project name (container name prefix)
 PROJECT_NAME       ?= $(shell basename $$PWD)
-# dcape container name prefix
-DCAPE_PROJECT_NAME ?= dcape
 # dcape network attach to
-DCAPE_NET          ?= $(DCAPE_PROJECT_NAME)_default
+DCAPE_NET          ?= $(DCAPE_TAG)_default
 # dcape postgresql container name
-PG_CONTAINER       ?= $(DCAPE_PROJECT_NAME)_db_1
+PG_CONTAINER       ?= $(DCAPE_TAG)_db_1
 
 # Docker-compose image tag
 DC_VER             ?= 1.27.4
@@ -63,9 +60,9 @@ IMAGE=$(IMAGE)
 # Docker image tag
 IMAGE_VER=$(IMAGE_VER)
 
-# Used by docker-compose
-# Docker-compose project name (container name prefix)
-PROJECT_NAME=$(PROJECT_NAME)
+# Join this dcape traefik environment
+DCAPE_TAG=$(DCAPE_TAG)
+
 # dcape network attach to
 DCAPE_NET=$(DCAPE_NET)
 
@@ -154,7 +151,7 @@ dc: docker-compose.yml
 	  -v $$PWD:$$PWD \
 	  -w $$PWD \
 	  docker/compose:$(DC_VER) \
-	  -p $$PROJECT_NAME \
+	  -p $$DCAPE_TAG \
 	  $(CMD)
 
 # ------------------------------------------------------------------------------

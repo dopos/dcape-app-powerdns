@@ -11,6 +11,7 @@ services:
     networks:
       - lan
     labels:
+      - "dcape.traefik.tag=${DCAPE_TAG}"
       - "traefik.enable=true"
       - "traefik.http.routers.pdns-app.rule=Host(`${APP_SITE}`)"
       - "traefik.http.routers.pdns-app.middlewares=narra"
@@ -23,8 +24,7 @@ services:
       --master --daemon=no --chroot=/ --socket-dir=/var/run --launch=gpgsql
       --webserver --webserver-address=0.0.0.0 --webserver-port=8081 --webserver-allow-from=0.0.0.0/0
       --gpgsql-host=db --gpgsql-dbname=${PGDATABASE} --gpgsql-user=${PGUSER} --gpgsql-password=${PGPASSWORD}
-#--launch=bind
-#  --launch+=gpgsql
+
 networks:
   lan:
     external:

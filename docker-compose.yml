@@ -2,26 +2,31 @@ version: '2.1'
 
 services:
 
-  pdns-app:
+  pdns:
     image: ${IMAGE}:${IMAGE_VER}
     ports:
       - "${SERVICE_PORT}:53"
       - "${SERVICE_PORT}:53/udp"
     restart: always
     networks:
-      - lan
+      lan:
+        # This allows internal access from traefik to powerdns
+        aliases:
+          - ${NS_HOST}
     labels:
       - "dcape.traefik.tag=${DCAPE_TAG}"
       - "traefik.enable=true"
-      - "traefik.http.routers.pdns-app.rule=Host(`${APP_SITE}`)"
-      - "traefik.http.routers.pdns-app.middlewares=narra"
-      - "traefik.http.services.pdns-app.loadbalancer.server.port=8081"
+      - "traefik.http.routers.pdns.rule=Host(`${APP_SITE}`)"
+      - "traefik.http.routers.pdns.middlewares=narra"
+      - "traefik.http.services.pdns.loadbalancer.server.port=8081"
+    environment:
+      - MYSQL_DEFAULT_AUTOCONF=false
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
       - /dev/null:/etc/pdns.conf
     command:
-      --master --daemon=no --chroot=/ --socket-dir=/var/run --launch=gpgsql
+      --master --daemon=no --chroot=/ --socket-dir=/var/run --launch=gpgsql --api=yes --api-key=${API_KEY}
       --webserver --webserver-address=0.0.0.0 --webserver-port=8081 --webserver-allow-from=0.0.0.0/0
       --gpgsql-host=db --gpgsql-dbname=${PGDATABASE} --gpgsql-user=${PGUSER} --gpgsql-password=${PGPASSWORD}
 

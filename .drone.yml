@@ -11,7 +11,7 @@ steps:
   commands:
   - . setup config
   - make db-create
-  - docker-compose -p $$PRG up -d --force-recreate
+  - docker-compose up -d --force-recreate
   volumes:
   - name: dockersock
     path: /var/run/docker.sock

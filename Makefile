@@ -6,12 +6,6 @@ CFG                ?= .env
 # DNS tcp/udp port
 SERVICE_PORT       ?= 54
 
-# Stats site host
-APP_SITE           ?= ns.dev.lan
-
-# Join this dcape traefik environment
-DCAPE_TAG          ?= dcape
-
 # Database name
 PGDATABASE         ?= pdns
 # Database user name
@@ -19,22 +13,27 @@ PGUSER             ?= pdns
 # Database user password
 PGPASSWORD         ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c14; echo)
 
+# Stats site host
+APP_SITE           ?= ns.dev.lan
+
+# Powerdns API key for DNS-01 ACME challenges
+API_KEY            ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c14; echo)
+
+# External DNS server hostname
+NS_HOST            ?= $(APP_SITE)
+
 # Docker image name
-IMAGE              ?= magnaz/powerdns
+IMAGE              ?= psitrax/powerdns
 # Docker image tag
-IMAGE_VER          ?= 4.3.1
+IMAGE_VER          ?= v4.3
 # Docker-compose project name (container name prefix)
-PROJECT_NAME       ?= $(shell basename $$PWD)
+COMPOSE_PROJECT_NAME       ?= $(shell basename $$PWD)
+# dcape container name prefix
+DCAPE_TAG          ?= dcape
 # dcape network attach to
 DCAPE_NET          ?= $(DCAPE_TAG)_default
 # dcape postgresql container name
 PG_CONTAINER       ?= $(DCAPE_TAG)_db_1
-
-# Docker-compose image tag
-DC_VER             ?= 1.27.4
-
-# Path to schema.pgsql.sql in PowerDNS docker image
-PGSQL_PATH         ?= /usr/local/share/doc/pdns/schema.pgsql.sql
 
 define CONFIG_DEF
 # ------------------------------------------------------------------------------
@@ -43,15 +42,21 @@ define CONFIG_DEF
 # DNS server port
 SERVICE_PORT=$(SERVICE_PORT)
 
+# External DNS server hostname
+NS_HOST=$(NS_HOST)
+
+# Stats site host
+APP_SITE=$(APP_SITE)
+
+# Powerdns API key for DNS-01 ACME challenges
+API_KEY=$(API_KEY)
+
 # Database name
 PGDATABASE=$(PGDATABASE)
 # Database user name
 PGUSER=$(PGUSER)
 # Database user password
 PGPASSWORD=$(PGPASSWORD)
-
-# Stats site host
-APP_SITE=$(APP_SITE)
 
 # Docker details
 
@@ -60,7 +65,11 @@ IMAGE=$(IMAGE)
 # Docker image tag
 IMAGE_VER=$(IMAGE_VER)
 
-# Join this dcape traefik environment
+# Used by docker-compose
+# Docker-compose project name (container name prefix)
+COMPOSE_PROJECT_NAME=$(COMPOSE_PROJECT_NAME)
+
+# dcape container name prefix
 DCAPE_TAG=$(DCAPE_TAG)
 
 # dcape network attach to
@@ -75,12 +84,12 @@ export CONFIG_DEF
 -include $(CFG)
 export
 
-.PHONY: all $(CFG) setup start stop up reup down docker-wait db-create db-drop psql dc help
+.PHONY: all $(CFG) update start stop up reup down docker-wait db-create db-drop psql dc help
 
 all: help
 
 # ------------------------------------------------------------------------------
-# webhook commands
+# dcape v1 webhook commands
 
 start: db-create up
 
@@ -89,6 +98,8 @@ start-hook: db-create reup
 stop: down
 
 update: reup
+
+$(CFG): $(CFG).sample
 
 # ------------------------------------------------------------------------------
 # docker commands
@@ -127,8 +138,7 @@ db-create: docker-wait
 	cat .psql.log ; \
 	if [ "$$db_exists" = "1" ] ; then \
 	  echo "*** db data load" ; \
-	  docker run --rm --entrypoint cat $$IMAGE:$$IMAGE_VER $(PGSQL_PATH) \
-	    | docker exec -i $$PG_CONTAINER psql -U $$PGUSER -d $$PGDATABASE -f - ; \
+	  cat schema.pgsql.sql | docker exec -i $$PG_CONTAINER psql -U $$PGUSER -d $$PGDATABASE -f - ; \
 	fi
 
 ## drop database and user
@@ -150,15 +160,14 @@ dc: docker-compose.yml
 	  -v /var/run/docker.sock:/var/run/docker.sock \
 	  -v $$PWD:$$PWD \
 	  -w $$PWD \
-	  docker/compose:$(DC_VER) \
-	  -p $$DCAPE_TAG \
+	  docker/compose \
 	  $(CMD)
 
 # ------------------------------------------------------------------------------
 
 $(CFG).sample:
-	@[ -f $@ ] || echo "$$CONFIG_DEF" > $@
-
+	@echo "$$CONFIG_DEF" > $@
+	@echo "$@ Created. Edit and rename to $(CFG)"
 
 ## generate sample config
 config: $(CFG).sample

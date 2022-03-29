@@ -3,9 +3,6 @@
 SHELL               = /bin/sh
 CFG                ?= .env
 
-# DNS tcp/udp port
-SERVICE_PORT       ?= 54
-
 # Database name
 PGDATABASE         ?= pdns
 # Database user name
@@ -19,55 +16,40 @@ APP_SITE           ?= ns.dev.lan
 # Powerdns API key for DNS-01 ACME challenges
 API_KEY            ?= $(shell < /dev/urandom tr -dc A-Za-z0-9 | head -c14; echo)
 
-# External DNS server hostname
-NS_HOST            ?= $(APP_SITE)
-
 # Docker image name
-IMAGE              ?= psitrax/powerdns
+IMAGE              ?= ghcr.io/dopos/powerdns-alpine
 # Docker image tag
-IMAGE_VER          ?= v4.3
-# Docker-compose project name (container name prefix)
-COMPOSE_PROJECT_NAME       ?= $(shell basename $$PWD)
+IMAGE_VER          ?= master
 # dcape container name prefix
 DCAPE_TAG          ?= dcape
 # dcape network attach to
-DCAPE_NET          ?= $(DCAPE_TAG)_default
-# dcape postgresql container name
-PG_CONTAINER       ?= $(DCAPE_TAG)_db_1
+DCAPE_NET          ?= $(DCAPE_TAG)
+USE_DB        ?= yes
 
-define CONFIG_DEF
+DCAPE_DC_USED ?= no
+USE_TLS ?= yes
+# DNS tcp/udp port
+PORTS       ?= 127.0.0.2:53
+ADMIN_IMAGE ?= ngoduykhanh/powerdns-admin
+ADMIN_IMAGE_VER ?= v0.2.4
+# Relative path to library sources from DCAPE/var
+PERSIST_FILES ?= *.sql
+APP_TAG ?= pdns
+IP_WHITELIST ?= 10.0.0.0/8,192.168.0.0/16
+DB_INIT_SQL ?= $(APP_ROOT)/schema.pgsql.sql
+define CONFIG_CUSTOM
 # ------------------------------------------------------------------------------
-# PowerDNS settings
+# PowerDNS settings DC_USED:$(DCAPE_DC_USED)
+
 
 # DNS server port
-SERVICE_PORT=$(SERVICE_PORT)
-
-# External DNS server hostname
-NS_HOST=$(NS_HOST)
+PORTS=$(PORTS)
 
 # Stats site host
 APP_SITE=$(APP_SITE)
 
 # Powerdns API key for DNS-01 ACME challenges
 API_KEY=$(API_KEY)
-
-# Database name
-PGDATABASE=$(PGDATABASE)
-# Database user name
-PGUSER=$(PGUSER)
-# Database user password
-PGPASSWORD=$(PGPASSWORD)
-
-# Docker details
-
-# Docker image name
-IMAGE=$(IMAGE)
-# Docker image tag
-IMAGE_VER=$(IMAGE_VER)
-
-# Used by docker-compose
-# Docker-compose project name (container name prefix)
-COMPOSE_PROJECT_NAME=$(COMPOSE_PROJECT_NAME)
 
 # dcape container name prefix
 DCAPE_TAG=$(DCAPE_TAG)
@@ -78,106 +60,27 @@ DCAPE_NET=$(DCAPE_NET)
 # dcape postgresql container name
 PG_CONTAINER=$(PG_CONTAINER)
 
+ADMIN_IMAGE=$(ADMIN_IMAGE)
+ADMIN_IMAGE_VER=$(ADMIN_IMAGE_VER)
+# Relative path to library sources from DCAPE/var
+#LIB_PATH=$(LIB_PATH)
+PERSIST_FILES=$(PERSIST_FILES)
+# Path to /opt/dcape/var. Used only outside drone
+DCAPE_ROOT=$(DCAPE_ROOT)
+APP_ROOT=$(APP_ROOT)
+IP_WHITELIST=$(IP_WHITELIST)
+DB_INIT_SQL=$(DB_INIT_SQL)
+
 endef
-export CONFIG_DEF
 
--include $(CFG)
-export
-
-.PHONY: all $(CFG) update start stop up reup down docker-wait db-create db-drop psql dc help
-
-all: help
-
-# ------------------------------------------------------------------------------
-# dcape v1 webhook commands
-
-start: db-create up
-
-start-hook: db-create reup
-
-stop: down
-
-update: reup
-
-$(CFG): $(CFG).sample
-
-# ------------------------------------------------------------------------------
-# docker commands
-
-## старт контейнеров
-up:
-up: CMD=up -d
-up: dc
-
-## рестарт контейнеров
-reup:
-reup: CMD=up --force-recreate -d
-reup: dc
-
-## остановка и удаление всех контейнеров
-down:
-down: CMD=rm -f -s
-down: dc
-
-# Wait for postgresql container start
-docker-wait:
-	@echo -n "Checking PG is ready..."
-	@until [ `docker inspect -f "{{.State.Health.Status}}" $$PG_CONTAINER` = "healthy" ] ; do sleep 1 ; echo -n "." ; done
-	@echo "Ok"
-
-# ------------------------------------------------------------------------------
-# DB operations
 
 # create user, db and load sql
-db-create: docker-wait
-	@echo "*** $@ ***" ; \
-	sql="CREATE USER \"$$PGUSER\" WITH PASSWORD '$$PGPASSWORD'" ; \
-	docker exec -i $$PG_CONTAINER psql -U postgres -c "$$sql" 2>&1 > .psql.log | grep -v "already exists" > /dev/null || true ; \
-	cat .psql.log ; \
-	docker exec -i $$PG_CONTAINER psql -U postgres -c "CREATE DATABASE \"$$PGDATABASE\" OWNER \"$$PGUSER\";" 2>&1 > .psql.log | grep  "already exists" > /dev/null || db_exists=1 ; \
-	cat .psql.log ; \
-	if [ "$$db_exists" = "1" ] ; then \
-	  echo "*** db data load" ; \
-	  cat schema.pgsql.sql | docker exec -i $$PG_CONTAINER psql -U $$PGUSER -d $$PGDATABASE -f - ; \
-	fi
-
-## drop database and user
-db-drop: docker-wait
-	@echo "*** $@ ***"
-	@docker exec -it $$PG_CONTAINER psql -U postgres -c "DROP DATABASE \"$$PGDATABASE\";" || true
-	@docker exec -it $$PG_CONTAINER psql -U postgres -c "DROP USER \"$$PGUSER\";" || true
-
-psql: docker-wait
-	@docker exec -it $$PG_CONTAINER psql -U $$PGUSER $$PGDATABASE
-
 # ------------------------------------------------------------------------------
-
-# $$PWD используется для того, чтобы текущий каталог был доступен в контейнере по тому же пути
-# и относительные тома новых контейнеров могли его использовать
-## run docker-compose
-dc: docker-compose.yml
-	@docker run --rm  \
-	  -v /var/run/docker.sock:/var/run/docker.sock \
-	  -v $$PWD:$$PWD \
-	  -w $$PWD \
-	  docker/compose \
-	  $(CMD)
-
-# ------------------------------------------------------------------------------
-
-$(CFG).sample:
-	@echo "$$CONFIG_DEF" > $@
-	@echo "$@ Created. Edit and rename to $(CFG)"
-
-## generate sample config
-config: $(CFG).sample
-
-# ------------------------------------------------------------------------------
-
-## List Makefile targets
-help:
-	@grep -A 1 "^##" Makefile | less
-
-##
-## Press 'q' for exit
-##
+# Find and include DCAPE/apps/drone/dcape-app/Makefile
+DCAPE_COMPOSE   ?= dcape-compose
+DCAPE_MAKEFILE  ?= $(shell docker inspect -f "{{.Config.Labels.dcape_app_makefile}}" $(DCAPE_COMPOSE))
+ifeq ($(shell test -e $(DCAPE_MAKEFILE) && echo -n yes),yes)
+  include $(DCAPE_MAKEFILE)
+else
+  include /opt/dcape-app/Makefile
+endif

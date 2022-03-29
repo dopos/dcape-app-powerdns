@@ -1,36 +1,57 @@
 version: '2.1'
 
 services:
+  admin:
+    image: ${ADMIN_IMAGE}:${ADMIN_IMAGE_VER}
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+    environment:
+      - SQLALCHEMY_DATABASE_URI=postgresql://${PGDATABASE}:${PGPASSWORD}@db/${PGUSER}
+      - GUINCORN_TIMEOUT=60
+      - GUNICORN_WORKERS=2
+      - GUNICORN_LOGLEVEL=DEBUG
+    restart: always
+
+    labels:
+      - traefik.enable=true
+      - dcape.traefik.tag=${DCAPE_TAG}
+      - traefik.http.routers.${APP_TAG}-admin.rule=Host(`${APP_SITE}`)
+      - traefik.http.routers.${APP_TAG}-admin.tls=${USE_TLS}
+      - traefik.http.routers.${APP_TAG}-admin.tls.certresolver=letsEncrypt
+      - traefik.http.routers.${APP_TAG}-admin.middlewares=${APP_TAG}-ipwhitelist
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
 
   pdns:
     image: ${IMAGE}:${IMAGE_VER}
     ports:
-      - "${SERVICE_PORT}:53"
-      - "${SERVICE_PORT}:53/udp"
+      - "${PORTS}:53"
+      - "${PORTS}:53/udp"
     restart: always
-    networks:
-      lan:
-        # This allows internal access from traefik to powerdns
-        aliases:
-          - ${NS_HOST}
     labels:
-      - "dcape.traefik.tag=${DCAPE_TAG}"
-      - "traefik.enable=true"
-      - "traefik.http.routers.pdns.rule=Host(`${APP_SITE}`)"
-      - "traefik.http.routers.pdns.middlewares=narra"
-      - "traefik.http.services.pdns.loadbalancer.server.port=8081"
-    environment:
-      - MYSQL_DEFAULT_AUTOCONF=false
+      - traefik.enable=true
+      - dcape.traefik.tag=${DCAPE_TAG}
+      - traefik.http.services.${APP_TAG}-backend.loadbalancer.server.port=8081
+      - traefik.http.routers.${APP_TAG}-backend.rule=Host(`${APP_SITE}`) && PathPrefix(`/pdns/`)
+      - traefik.http.middlewares.${APP_TAG}-prefix.stripprefix.prefixes=/pdns
+      - traefik.http.routers.${APP_TAG}-backend.middlewares=${APP_TAG}-prefix@docker,${APP_TAG}-ipwhitelist
+      - traefik.http.routers.${APP_TAG}-backend.tls=${USE_TLS}
+      - traefik.http.routers.${APP_TAG}-backend.tls.certresolver=letsEncrypt
+      - traefik.http.middlewares.${APP_TAG}-ipwhitelist.ipwhitelist.sourcerange=${IP_WHITELIST}
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
-      - /dev/null:/etc/pdns.conf
+    entrypoint: /usr/sbin/pdns_server
     command:
-      --master --daemon=no --chroot=/ --socket-dir=/var/run --launch=gpgsql --api=yes --api-key=${API_KEY}
+      --master=no --slave=yes --slave-cycle-interval=60 --daemon=no --chroot=/ --socket-dir=/var/run
+      --launch=bind --launch+=gpgsql --gpgsql-dbname=${PGDATABASE} --gpgsql-user=${PGUSER}
+      --gpgsql-host=db --gpgsql-password=${PGPASSWORD} --api=yes --api-key=${API_KEY}
       --webserver --webserver-address=0.0.0.0 --webserver-port=8081 --webserver-allow-from=0.0.0.0/0
-      --gpgsql-host=db --gpgsql-dbname=${PGDATABASE} --gpgsql-user=${PGUSER} --gpgsql-password=${PGPASSWORD}
 
 networks:
-  lan:
+  default:
     external:
       name: ${DCAPE_NET}

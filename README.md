@@ -12,7 +12,7 @@
 
 ## Docker image used
 
-* [psitrax/powerdns](https://github.com/psi-4ward/docker-powerdns)
+* [ghcr.io/dopos/powerdns-alpine](https://github.com/dopos/powerdns-alpine)
 
 ## Requirements
 
@@ -31,6 +31,14 @@
 * Fork [dopos/dcape-dns-config](https://github/com/dopos/dcape-dns-config) and cook your zones
 
 See also: [Deploy setup](https://github.com/dopos/dcape/blob/master/DEPLOY.md) (in Russian)
+
+## 4.8.0 Upgrade
+
+Database schema was changed in 4.8.0, so use
+
+```
+make up-4.8.0
+```
 
 ## License
 

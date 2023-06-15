@@ -24,3 +24,5 @@ services:
       - PDNS_WEBSERVER_ALLOW_FROM=0.0.0.0/0
       - PDNS_WEBSERVER_PORT=8081
       - PDNS_WEBSERVER=yes
+#      - PDNS_LOG_DNS_QUERIES=yes
+#      - PDNS_LOGLEVEL=5

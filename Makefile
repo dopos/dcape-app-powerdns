@@ -62,3 +62,7 @@ endef
 
 up-4.8.0:
 	@echo "$${PGUP_4_8_0}" | docker exec -i $$PG_CONTAINER psql -U $$PGUSER $$PGDATABASE
+
+test:
+	curl -s -H 'X-API-Key: $(API_KEY)' http://$(APP_SITE)/api/v1/servers/localhost/zones/vivo.dev. | jq '.'
+

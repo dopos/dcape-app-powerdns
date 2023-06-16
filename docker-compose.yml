@@ -4,9 +4,9 @@ services:
     ports:
       - "${SERVICE_PORT}:53"
       - "${SERVICE_PORT}:53/udp"
-    hostname: ${APP_SITE}
+    hostname: ${APP_TAG}
     labels:
-      - "traefik.http.services.powerdns.loadbalancer.server.port=8081"
+      - traefik.http.services.${APP_TAG}.loadbalancer.server.port=8081
     environment:
       - PDNS_API_KEY=${API_KEY}
       - PDNS_API=yes

@@ -38,12 +38,13 @@ PDNS_IMAGE       ?= ghcr.io/dopos/powerdns-alpine
 #- powerdns docker image version
 PDNS_VER         ?= $(PDNS_VER0)
 
-#- dcape root
-DCAPE_ROOT       ?= ../../
-APP_ROOT         ?= $(PWD)
-NAME ?= PDNS
-DB_ADMIN_USER    = $(PDNS_DB_TAG)
+#- dcape root directory
+DCAPE_ROOT       ?= $(DCAPE_ROOT)
 
+APP_ROOT         ?= $(PWD)
+NAME             ?= PDNS
+DB_INIT_SQL      ?= schema.pgsql.sql
+DB_ADMIN_USER     = $(PDNS_DB_TAG)
 # ------------------------------------------------------------------------------
 
 -include $(CFG)
@@ -63,11 +64,8 @@ init:
 	@echo "  Stats URL: $(DCAPE_SCHEME)://$(PDNS_HOST)"
 	@echo "  Listen: $(PDNS_LISTEN)"
 
-mydb: NAME=PDNS
-mydb: DB_INIT_SQL=$(APP_ROOT)/schema.pgsql.sql
-mydb: db-create
 # create user, db and load sql
-setup: docker-wait mydb
+setup: db-create
 	@echo "*** $@ ***" ; \
 	[[ "$$DNS" != "wild" ]] || cat $(APP_ROOT)/setup.acme.sql | docker exec -i $$DB_CONTAINER psql -U $$PDNS_DB_TAG -d $$PDNS_DB_TAG \
 	    -vACME_DOMAIN=$$ACME_DOMAIN -vACME_NS=$$ACME_NS -vNS_ADMIN=$$ACME_ADMIN_EMAIL \

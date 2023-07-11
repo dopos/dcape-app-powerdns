@@ -45,6 +45,9 @@ APP_ROOT         ?= $(PWD)
 NAME             ?= PDNS
 DB_INIT_SQL      ?= schema.pgsql.sql
 DB_ADMIN_USER     = $(PDNS_DB_TAG)
+
+#for powerdns-load-zone
+DB_CONTAINER     ?= dcape-db-1
 # ------------------------------------------------------------------------------
 
 -include $(CFG)

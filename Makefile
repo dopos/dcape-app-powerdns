@@ -31,7 +31,7 @@ PDNS_DB_TAG      ?= pdns
 #- Database user password
 PDNS_DB_PASS     ?= $(shell openssl rand -hex 16; echo)
 #- Powerdns API key for DNS-01 ACME challenges
-PDNS_API_KEY     ?= $(shell openssl rand -hex 16; echo)
+PDNS_API_KEY     ?= $(DCAPE_PDNS_API_KEY)
 
 #- powerdns docker image
 PDNS_IMAGE       ?= ghcr.io/dopos/powerdns-alpine
@@ -54,7 +54,6 @@ DB_CONTAINER     ?= dcape-db-1
 export
 
 ifdef DCAPE_STACK
-include $(DCAPE_ROOT)/$(CFG)
 include $(DCAPE_ROOT)/Makefile.dcape
 else
 include $(DCAPE_ROOT)/Makefile.app
@@ -68,12 +67,11 @@ init:
 	@echo "  Listen: $(PDNS_LISTEN)"
 
 # create user, db and load sql
-setup: db-create
+.setup-before-up: db-create db-load-acme
+
+db-load-acme:
 	@echo "*** $@ ***" ; \
-	[[ "$$DNS" != "wild" ]] || cat $(APP_ROOT)/setup.acme.sql | docker exec -i $$DB_CONTAINER psql -U $$PDNS_DB_TAG -d $$PDNS_DB_TAG \
-	    -vACME_DOMAIN=$$ACME_DOMAIN -vACME_NS=$$ACME_NS -vNS_ADMIN=$$ACME_ADMIN_EMAIL \
-	    || true
-	$(MAKE) -s up-ns
+	[[ "$$DNS" != "wild" ]] || cat $(APP_ROOT)/setup.acme.sql | $(MAKE) -s compose CMD="exec -T db psql -U $$PDNS_DB_TAG -d $$PDNS_DB_TAG -vACME_DOMAIN=$$ACME_DOMAIN -vACME_NS=$$ACME_NS -vNS_ADMIN=$$ACME_ADMIN_EMAIL" || true
 
 # load powerdns zone from zone.sql
 powerdns-load-zone: zone.sql docker-wait

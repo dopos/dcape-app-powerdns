@@ -48,6 +48,8 @@ DB_ADMIN_USER     = $(PDNS_DB_TAG)
 
 #for powerdns-load-zone
 DB_CONTAINER     ?= dcape-db-1
+ZONE_SQL         ?= zone.sql
+
 # ------------------------------------------------------------------------------
 
 -include $(CFG)
@@ -74,5 +76,6 @@ db-load-acme:
 	[[ "$$DNS" != "wild" ]] || cat $(APP_ROOT)/setup.acme.sql | $(MAKE) -s compose CMD="exec -T db psql -U $$PDNS_DB_TAG -d $$PDNS_DB_TAG -vACME_DOMAIN=$$ACME_DOMAIN -vACME_NS=$$ACME_NS -vNS_ADMIN=$$ACME_ADMIN_EMAIL" || true
 
 # load powerdns zone from zone.sql
-powerdns-load-zone: zone.sql docker-wait
-	cat zone.sql | docker exec -i $$DB_CONTAINER psql -U $$PDNS_DB_TAG -d $$PDNS_DB_TAG
+# Example: make powerdns-load-zone ZONE_SQL=z.sql DCAPE_STACK=1
+powerdns-load-zone: $(ZONE_SQL) docker-wait
+	cat $(ZONE_SQL) | $(MAKE) -s compose CMD="exec -T db psql -U $$PDNS_DB_TAG -d $$PDNS_DB_TAG"

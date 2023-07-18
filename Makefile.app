@@ -7,7 +7,7 @@ SHELL          = /bin/bash
 APP_SITE      ?= ns.dev.lan
 
 # App names (db/user name etc)
-APP_NAME      ?= pdns
+APP_NAME      ?= powerdns
 
 #- powerdns docker image
 IMAGE         ?= $(PDNS_IMAGE0)

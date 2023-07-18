@@ -19,7 +19,9 @@
       - "prometheus.io/port=8081"
       - "prometheus.io/extra-labels=job:powerdns"
     environment:
-      - PDNS_API_KEY=${PDNS_API_KEY}
+      - PDNS_API_KEY
+      - PDNS_LOG_DNS_QUERIES
+      - PDNS_LOGLEVEL
       - PDNS_API=yes
       - PDNS_CHROOT=/
       - PDNS_DAEMON=no
@@ -35,5 +37,3 @@
       - PDNS_WEBSERVER_ALLOW_FROM=0.0.0.0/0
       - PDNS_WEBSERVER_PORT=8081
       - PDNS_WEBSERVER=yes
-      - PDNS_LOG_DNS_QUERIES
-      - PDNS_LOGLEVEL

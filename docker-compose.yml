@@ -11,7 +11,9 @@ services:
       - traefik.http.routers.${APP_TAG}.rule=Host(`${APP_SITE}`) && PathPrefix(`/pdns/`)
       - traefik.http.routers.${APP_TAG}.middlewares=${APP_TAG}-prefix@docker
     environment:
-      - PDNS_API_KEY=${PDNS_API_KEY}
+      - PDNS_API_KEY
+      - PDNS_LOG_DNS_QUERIES
+      - PDNS_LOGLEVEL
       - PDNS_API=yes
       - PDNS_CHROOT=/
       - PDNS_DAEMON=no
@@ -27,5 +29,3 @@ services:
       - PDNS_WEBSERVER_ALLOW_FROM=0.0.0.0/0
       - PDNS_WEBSERVER_PORT=8081
       - PDNS_WEBSERVER=yes
-      - PDNS_LOG_DNS_QUERIES
-      - PDNS_LOGLEVEL

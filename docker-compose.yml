@@ -2,8 +2,8 @@
 services:
   app:
     ports:
-      - "${SERVICE_PORT}:53"
-      - "${SERVICE_PORT}:53/udp"
+      - "${PDNS_LISTEN}:53"
+      - "${PDNS_LISTEN}:53/udp"
     hostname: ${APP_TAG}
     labels:
       - traefik.http.services.${APP_TAG}.loadbalancer.server.port=8081
@@ -11,7 +11,7 @@ services:
       - traefik.http.routers.${APP_TAG}.rule=Host(`${APP_SITE}`) && PathPrefix(`/pdns/`)
       - traefik.http.routers.${APP_TAG}.middlewares=${APP_TAG}-prefix@docker
     environment:
-      - PDNS_API_KEY=${API_KEY}
+      - PDNS_API_KEY=${PDNS_API_KEY}
       - PDNS_API=yes
       - PDNS_CHROOT=/
       - PDNS_DAEMON=no
@@ -27,5 +27,5 @@ services:
       - PDNS_WEBSERVER_ALLOW_FROM=0.0.0.0/0
       - PDNS_WEBSERVER_PORT=8081
       - PDNS_WEBSERVER=yes
-#      - PDNS_LOG_DNS_QUERIES=yes
-#      - PDNS_LOGLEVEL=5
+      - PDNS_LOG_DNS_QUERIES
+      - PDNS_LOGLEVEL

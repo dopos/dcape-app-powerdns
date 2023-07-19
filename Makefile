@@ -1,5 +1,7 @@
-# powerdns init Makefile
-# This file included by ../../Makefile
+## powerdns Makefile.
+## Used with dcape at ../../
+#:
+
 SHELL                 = /bin/bash
 CFG                  ?= .env
 
@@ -36,15 +38,6 @@ DB_INIT_SQL      ?= schema.pgsql.sql
 
 -include $(CFG)
 export
-
-# define CONFIG_CUSTOM
-# # ------------------------------------------------------------------------------
-# # Sample config for .env
-# #SOME_VAR=value
-#
-# endef
-
-# ------------------------------------------------------------------------------
 # Find and include DCAPE_ROOT/Makefile
 DCAPE_COMPOSE   ?= dcape-compose
 DCAPE_ROOT      ?= $(shell docker inspect -f "{{.Config.Labels.dcape_root}}" $(DCAPE_COMPOSE))
@@ -54,3 +47,4 @@ ifeq ($(DCAPE_STACK),yes)
 else
   include Makefile.app
 endif
+# ------------------------------------------------------------------------------

@@ -4,7 +4,7 @@
 SHELL          = /bin/bash
 
 # Stats site host
-APP_SITE      ?= ns.dev.lan
+APP_SITE      ?= ns.dev.test
 
 # App names (db/user name etc)
 APP_NAME      ?= powerdns

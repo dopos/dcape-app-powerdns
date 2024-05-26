@@ -1,5 +1,7 @@
 # dcape-app-powerdns
 
+> Приложение ядра [dcape](https://github.com/dopos/dcape) для предоставления сервиса DNS.
+
 [![GitHub Release][1]][2] [![GitHub code size in bytes][3]]() [![GitHub license][4]][5]
 
 [1]: https://img.shields.io/github/release/dopos/dcape-app-powerdns.svg
@@ -8,40 +10,25 @@
 [4]: https://img.shields.io/github/license/dopos/dcape-app-powerdns.svg
 [5]: LICENSE
 
-[PowerDNS](https://www.powerdns.com/) application package for [dcape](https://github.com/dopos/dcape).
+ Роль в dcape | Сервис | Docker images
+ --- | --- | ---
+ ns | [PowerDNS](https://www.powerdns.com/) | [ghcr.io/dopos/powerdns-alpine](https://github.com/dopos/powerdns-alpine)
 
-## Docker image used
+## Назначение
 
-* [ghcr.io/dopos/powerdns-alpine](https://github.com/dopos/powerdns-alpine)
+* Wildcard-DNS для сертификатов LetsEncrypt
+* Сервис DNS
 
-## Requirements
+Сервис может быть развернут как отдельное приложение dcape.
 
-* linux 64bit (git, make, wget, gawk, openssl)
-* [docker](http://docker.io)
-* [dcape](https://github.com/dopos/dcape)
-* Git service ([github](https://github.com), [gitea](https://gitea.io) or [gogs](https://gogs.io))
+---
 
-## Usage
+## Install
 
-* Fork this repo in your Git service
-* Setup deploy hook
-* Run "Test delivery" (config sample will be created in dcape)
-* Edit and save config (enable deploy etc)
-* Run "Test delivery" again (app will be installed and started on webhook host)
-* Fork [dopos/dcape-dns-config](https://github/com/dopos/dcape-dns-config) and cook your zones
-
-See also: [Deploy setup](https://github.com/dopos/dcape/blob/master/DEPLOY.md) (in Russian)
-
-## 4.8.0 Upgrade
-
-Database schema was changed in 4.8.0, so use
-
-```
-make up-4.8.0
-```
+Приложение разворачивается в составе [dcape](https://github.com/dopos/dcape).
 
 ## License
 
 The MIT License (MIT), see [LICENSE](LICENSE).
 
-Copyright (c) 2017 Aleksei Kovrizhkin <lekovr+dopos@gmail.com>
+Copyright (c) 2017-2024 Aleksei Kovrizhkin <lekovr+dopos@gmail.com>

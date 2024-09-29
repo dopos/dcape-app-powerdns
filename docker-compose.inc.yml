@@ -31,7 +31,7 @@
       - PDNS_GPGSQL_PORT=5432
       - PDNS_GPGSQL_USER=${PDNS_DB_TAG}
       - PDNS_LAUNCH=gpgsql,bind
-      - PDNS_MASTER=yes
+#      - PDNS_MASTER=yes
       - PDNS_SOCKET_DIR=/var/run
       - PDNS_WEBSERVER_ADDRESS=0.0.0.0
       - PDNS_WEBSERVER_ALLOW_FROM=0.0.0.0/0
